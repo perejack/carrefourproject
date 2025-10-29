@@ -1,6 +1,5 @@
-// Vercel Serverless Function - Check payment status from database
 export default async function handler(req, res) {
-  // Set CORS headers
+  // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
@@ -9,32 +8,32 @@ export default async function handler(req, res) {
     'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
   );
 
-  // Handle OPTIONS request for CORS preflight
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
 
-  // Only allow GET requests
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    // Get transaction ID from URL parameter
     const { txnId } = req.query;
 
     if (!txnId) {
       return res.status(400).json({ 
-        error: 'Transaction ID is required',
-        success: false
+        error: 'Missing transaction ID',
+        success: false 
       });
     }
 
-    // TODO: Replace this with your actual database query
-    // Example: Query Supabase, MongoDB, PostgreSQL, etc.
-    
-    /*
+    // Check Supabase for payment status - hardcoded credentials
+    const supabaseUrl = 'https://dbpbvoqfexofyxcexmmp.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRicGJ2b3FmZXhvZnl4Y2V4bW1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzNDc0NTMsImV4cCI6MjA3NDkyMzQ1M30.hGn7ux2xnRxseYCjiZfCLchgOEwIlIAUkdS6h7byZqc';
+
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
     const { data, error } = await supabase
       .from('payments')
       .select('*')
@@ -42,9 +41,10 @@ export default async function handler(req, res) {
       .single();
 
     if (error) {
-      return res.status(404).json({
-        success: false,
-        error: 'Payment not found'
+      console.error('Database query error:', error);
+      return res.status(404).json({ 
+        error: 'Payment not found',
+        success: false 
       });
     }
 
@@ -52,35 +52,19 @@ export default async function handler(req, res) {
       success: true,
       payment: {
         transaction_id: data.transaction_id,
-        status: data.status, // 'pending', 'success', 'failed', 'cancelled'
+        status: data.status,
         amount: data.amount,
-        phone: data.phone,
+        msisdn: data.msisdn,
+        reference: data.reference,
         created_at: data.created_at,
-        updated_at: data.updated_at
-      }
+        updated_at: data.updated_at,
+      },
     });
-    */
-
-    // For now, return a placeholder response
-    // IMPORTANT: Replace this with actual database query
-    console.log('Checking payment status for transaction:', txnId);
-
-    return res.status(200).json({
-      success: true,
-      payment: {
-        transaction_id: txnId,
-        status: 'pending', // Change to 'success', 'failed', or 'cancelled' based on actual status
-        amount: 139,
-        phone: '254XXXXXXXXX',
-        message: 'DEMO MODE - Replace with actual database query'
-      }
-    });
-
   } catch (error) {
     console.error('Status check error:', error);
     return res.status(500).json({ 
       error: error.message || 'Failed to check payment status',
-      success: false
+      success: false 
     });
   }
 }
